@@ -3,9 +3,8 @@ package one.wabbit.textwrap
 import kotlin.math.max
 
 /**
- * Port of Python's textwrap module to Kotlin.
- * Original authorship: Gregory P. Ward, Python Software Foundation.
- * This port aims to mirror behavior for ASCII whitespace and wrapping semantics.
+ * Port of Python's textwrap module to Kotlin. Original authorship: Gregory P. Ward, Python Software
+ * Foundation. This port aims to mirror behavior for ASCII whitespace and wrapping semantics.
  */
 class TextWrapper(
     var width: Int = 70,
@@ -23,7 +22,7 @@ class TextWrapper(
     // Make \w and \d Unicode-aware, and define LETTER as \p{L}
     var unicodeWordClasses: Boolean = true,
     // Include Unicode hyphen-like chars in hyphen logic
-    var unicodeHyphens: Boolean = true
+    var unicodeHyphens: Boolean = true,
 ) {
     // ASCII whitespace exactly as in CPython textwrap
     private val WHITESPACE = "[\\t\\n\\u000B\\u000C\\r ]"
@@ -37,18 +36,25 @@ class TextWrapper(
 
     // IMPORTANT: exclude U+2011 (NON-BREAKING HYPHEN) on purpose
     private val hyphenChars: Set<Char> =
-        if (unicodeHyphens) setOf('-', '\u2010', /* HYPHEN */
-            '\u2012', /* FIGURE DASH */
-            '\u2013', /* EN DASH */
-            '\u2014', /* EM DASH */
-            '\u2212'  /* MINUS SIGN */)
-        else setOf('-')
+        if (unicodeHyphens) {
+            setOf(
+                '-',
+                '\u2010', // HYPHEN
+                '\u2012', // FIGURE DASH
+                '\u2013', // EN DASH
+                '\u2014', // EM DASH
+                '\u2212', // MINUS SIGN
+            )
+        } else {
+            setOf('-')
+        }
 
     private val uFlag = if (unicodeWordClasses) "(?U)" else ""
 
     // Build the complex splitter (instance-scoped; depends on flags)
     private val wordsepRe: Regex by lazy {
-        val pattern = """
+        val pattern =
+            """
             $uFlag(
               $WHITESPACE+                              # any whitespace
             | (?<=$WORD_PUNCT) $HY{2,} (?=\w)           # double hyphen between words
@@ -59,14 +65,13 @@ class TextWrapper(
                 | (?<=$WORD_PUNCT) (?=$HY{2,}\w)        # em-dash (double hyphen) lookahead
               )
             )
-        """.trimIndent()
+            """
+                .trimIndent()
         Regex(pattern, setOf(RegexOption.COMMENTS))
     }
 
     // Simple splitter for breakOnHyphens = false (ASCII whitespace only)
-    private val wordsepSimpleRe: Regex by lazy {
-        Regex("($WHITESPACE+)")
-    }
+    private val wordsepSimpleRe: Regex by lazy { Regex("($WHITESPACE+)") }
 
     // End-of-sentence heuristic (ASCII-lower letter + punctuation + optional quote).
     private val sentenceEndRe: Regex = Regex("""[a-z][.!?]["']?\Z""")
@@ -128,7 +133,7 @@ class TextWrapper(
         reversedChunks: MutableList<String>,
         curLine: MutableList<String>,
         curLen: Int,
-        widthAvail: Int
+        widthAvail: Int,
     ) {
         val spaceLeft = if (widthAvail < 1) 1 else widthAvail - curLen
         if (breakLongWords) {
@@ -175,7 +180,12 @@ class TextWrapper(
             val widthAvail = width - indent.length
 
             // Drop leading whitespace for all but the very first line.
-            if (dropWhitespace && lines.isNotEmpty() && chunks.isNotEmpty() && chunks.last().trim().isEmpty()) {
+            if (
+                dropWhitespace &&
+                    lines.isNotEmpty() &&
+                    chunks.isNotEmpty() &&
+                    chunks.last().trim().isEmpty()
+            ) {
                 chunks.removeAt(chunks.lastIndex)
             }
 
@@ -203,11 +213,12 @@ class TextWrapper(
             }
 
             if (curLine.isNotEmpty()) {
-                val allowLine = (maxLines == null) ||
+                val allowLine =
+                    (maxLines == null) ||
                         (lines.size + 1 < maxLines!!) ||
                         ((chunks.isEmpty() ||
-                                (dropWhitespace && chunks.size == 1 && chunks[0].trim().isEmpty()))
-                                && curLen <= widthAvail)
+                            (dropWhitespace && chunks.size == 1 && chunks[0].trim().isEmpty())) &&
+                            curLen <= widthAvail)
 
                 if (allowLine) {
                     lines.add(indent + curLine.joinToString(separator = ""))
@@ -215,8 +226,9 @@ class TextWrapper(
                     // Need to truncate and append placeholder
                     var tmpLen = curLen
                     while (curLine.isNotEmpty()) {
-                        if (curLine.last().trim().isNotEmpty() &&
-                            tmpLen + placeholder.length <= widthAvail
+                        if (
+                            curLine.last().trim().isNotEmpty() &&
+                                tmpLen + placeholder.length <= widthAvail
                         ) {
                             curLine.add(placeholder)
                             lines.add(indent + curLine.joinToString(separator = ""))
@@ -242,9 +254,7 @@ class TextWrapper(
         return lines
     }
 
-    private fun splitChunks(text: String): MutableList<String> {
-        return split(mungeWhitespace(text))
-    }
+    private fun splitChunks(text: String): MutableList<String> = split(mungeWhitespace(text))
 
     /** Public API: wrap -> list of lines */
     fun wrap(text: String): List<String> {
@@ -283,7 +293,8 @@ class TextWrapper(
                     repeat(spaces) { out.append(' ') }
                     col += spaces
                 }
-                '\n', '\r' -> {
+                '\n',
+                '\r' -> {
                     out.append(c)
                     col = 0
                 }
@@ -312,13 +323,23 @@ fun wrap(
     breakOnHyphens: Boolean = true,
     tabsize: Int = 8,
     maxLines: Int? = null,
-    placeholder: String = " [...]"
+    placeholder: String = " [...]",
 ): List<String> {
-    val w = TextWrapper(
-        width, initialIndent, subsequentIndent, expandTabs, replaceWhitespace,
-        fixSentenceEndings, breakLongWords, dropWhitespace, breakOnHyphens,
-        tabsize, maxLines, placeholder
-    )
+    val w =
+        TextWrapper(
+            width,
+            initialIndent,
+            subsequentIndent,
+            expandTabs,
+            replaceWhitespace,
+            fixSentenceEndings,
+            breakLongWords,
+            dropWhitespace,
+            breakOnHyphens,
+            tabsize,
+            maxLines,
+            placeholder,
+        )
     return w.wrap(text)
 }
 
@@ -336,13 +357,23 @@ fun fill(
     breakOnHyphens: Boolean = true,
     tabsize: Int = 8,
     maxLines: Int? = null,
-    placeholder: String = " [...]"
+    placeholder: String = " [...]",
 ): String {
-    val w = TextWrapper(
-        width, initialIndent, subsequentIndent, expandTabs, replaceWhitespace,
-        fixSentenceEndings, breakLongWords, dropWhitespace, breakOnHyphens,
-        tabsize, maxLines, placeholder
-    )
+    val w =
+        TextWrapper(
+            width,
+            initialIndent,
+            subsequentIndent,
+            expandTabs,
+            replaceWhitespace,
+            fixSentenceEndings,
+            breakLongWords,
+            dropWhitespace,
+            breakOnHyphens,
+            tabsize,
+            maxLines,
+            placeholder,
+        )
     return w.fill(text)
 }
 
@@ -363,29 +394,30 @@ fun shorten(
     breakLongWords: Boolean = true,
     dropWhitespace: Boolean = true,
     breakOnHyphens: Boolean = true,
-    tabsize: Int = 8
+    tabsize: Int = 8,
 ): String {
     val collapsed = text.trim().split(Regex("\\s+")).joinToString(" ")
-    val w = TextWrapper(
-        width = width,
-        initialIndent = initialIndent,
-        subsequentIndent = subsequentIndent,
-        expandTabs = expandTabs,
-        replaceWhitespace = replaceWhitespace,
-        fixSentenceEndings = fixSentenceEndings,
-        breakLongWords = breakLongWords,
-        dropWhitespace = dropWhitespace,
-        breakOnHyphens = breakOnHyphens,
-        tabsize = tabsize,
-        maxLines = 1,
-        placeholder = placeholder
-    )
+    val w =
+        TextWrapper(
+            width = width,
+            initialIndent = initialIndent,
+            subsequentIndent = subsequentIndent,
+            expandTabs = expandTabs,
+            replaceWhitespace = replaceWhitespace,
+            fixSentenceEndings = fixSentenceEndings,
+            breakLongWords = breakLongWords,
+            dropWhitespace = dropWhitespace,
+            breakOnHyphens = breakOnHyphens,
+            tabsize = tabsize,
+            maxLines = 1,
+            placeholder = placeholder,
+        )
     return w.fill(collapsed)
 }
 
 /**
- * Remove any common leading whitespace from every line in [text].
- * Follows Python's textwrap.dedent semantics for spaces and tabs.
+ * Remove any common leading whitespace from every line in [text]. Follows Python's textwrap.dedent
+ * semantics for spaces and tabs.
  */
 fun dedent(text: String): String {
     // Normalize lines that are only space or tab to empty (but keep the newline).
@@ -400,7 +432,9 @@ fun dedent(text: String): String {
     for (indent in indents) {
         when {
             margin == null -> margin = indent
-            indent.startsWith(margin!!) -> { /* keep existing margin */ }
+            indent.startsWith(margin!!) -> {
+                /* keep existing margin */
+            }
             margin!!.startsWith(indent) -> margin = indent
             else -> {
                 // Find largest common prefix of spaces/tabs
@@ -421,17 +455,11 @@ fun dedent(text: String): String {
 }
 
 /**
- * Add [prefix] to the beginning of selected lines.
- * If [predicate] is null, prefix is added to all non-blank lines
- * (i.e., lines that are not solely whitespace).
+ * Add [prefix] to the beginning of selected lines. If [predicate] is null, prefix is added to all
+ * non-blank lines (i.e., lines that are not solely whitespace).
  */
-fun indent(
-    text: String,
-    prefix: String,
-    predicate: ((String) -> Boolean)? = null
-): String {
-    val shouldPrefix: (String) -> Boolean =
-        predicate ?: { line -> !line.isBlank() }
+fun indent(text: String, prefix: String, predicate: ((String) -> Boolean)? = null): String {
+    val shouldPrefix: (String) -> Boolean = predicate ?: { line -> !line.isBlank() }
 
     val out = StringBuilder(text.length + prefix.length * 2)
     for (line in splitLinesKeepEnds(text)) {
