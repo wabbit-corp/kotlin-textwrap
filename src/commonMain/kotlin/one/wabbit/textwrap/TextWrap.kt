@@ -24,16 +24,6 @@ class TextWrapper(
     // Include Unicode hyphen-like chars in hyphen logic
     var unicodeHyphens: Boolean = true,
 ) {
-    // ASCII whitespace exactly as in CPython textwrap
-    private val WHITESPACE = "[\\t\\n\\u000B\\u000C\\r ]"
-    private val NOWHITESPACE = "[^\\t\\n\\u000B\\u000C\\r ]"
-
-    private val WORD_PUNCT = """[\w!"'&.,?]"""
-    private val LETTER = if (unicodeWordClasses) """\p{L}""" else """[^\d\W]"""
-
-    // Optional hyphen class
-    private val HY = if (unicodeHyphens) """[-\u2010\u2011\u2012\u2013\u2014\u2212]""" else "-"
-
     // IMPORTANT: exclude U+2011 (NON-BREAKING HYPHEN) on purpose
     private val hyphenChars: Set<Char> =
         if (unicodeHyphens) {
@@ -48,30 +38,6 @@ class TextWrapper(
         } else {
             setOf('-')
         }
-
-    private val uFlag = if (unicodeWordClasses) "(?U)" else ""
-
-    // Build the complex splitter (instance-scoped; depends on flags)
-    private val wordsepRe: Regex by lazy {
-        val pattern =
-            """
-            $uFlag(
-              $WHITESPACE+                              # any whitespace
-            | (?<=$WORD_PUNCT) $HY{2,} (?=\w)           # double hyphen between words
-            | $NOWHITESPACE+? (?:                       # word, possibly hyphenated
-                  $HY(?: (?<=$LETTER{2}$HY) | (?<=$LETTER$HY$LETTER$HY) )
-                  (?= $LETTER $HY? $LETTER )
-                | (?=$WHITESPACE|\Z)                    # end of word
-                | (?<=$WORD_PUNCT) (?=$HY{2,}\w)        # em-dash (double hyphen) lookahead
-              )
-            )
-            """
-                .trimIndent()
-        Regex(pattern, setOf(RegexOption.COMMENTS))
-    }
-
-    // Simple splitter for breakOnHyphens = false (ASCII whitespace only)
-    private val wordsepSimpleRe: Regex by lazy { Regex("($WHITESPACE+)") }
 
     // End-of-sentence heuristic (ASCII-lower letter + punctuation + optional quote).
     private val sentenceEndRe: Regex = Regex("""[a-z][.!?]["']?\Z""")
