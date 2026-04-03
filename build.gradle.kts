@@ -18,6 +18,8 @@ plugins {
 
     kotlin("multiplatform")
 
+    id("one.wabbit.acyclic")
+
     id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover")
     id("maven-publish")
@@ -70,6 +72,16 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xcontext-parameters")
 
+        freeCompilerArgs.addAll(
+            "-P",
+            "plugin:one.wabbit.acyclic:compilationUnits=enabled",
+        )
+
+        freeCompilerArgs.addAll(
+            "-P",
+            "plugin:one.wabbit.acyclic:declarations=enabled",
+        )
+
     }
     applyDefaultHierarchyTemplate()
 
@@ -94,8 +106,16 @@ kotlin {
 
     macosArm64("hostNative")
 
-    targets.withType(KotlinNativeTarget::class.java).configureEach {
-        binaries.framework {
+    listOf(
+
+        targets.getByName("iosArm64"),
+
+        targets.getByName("iosSimulatorArm64"),
+
+        targets.getByName("hostNative"),
+
+    ).forEach { target ->
+        (target as KotlinNativeTarget).binaries.framework {
             baseName = "Textwrap"
             isStatic = true
         }
